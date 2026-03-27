@@ -1,11 +1,3 @@
-/*
- * tt_um_factory_test.v
- *
- * Test user module
- *
- * Author: Sylvain Munaut <tnt@246tNt.com>
- */
-
 `default_nettype none
 
 module tt_um_factory_test (
@@ -18,23 +10,17 @@ module tt_um_factory_test (
     input  wire       clk,      // clock
     input  wire       rst_n     // reset_n - low to reset
 );
-
-  reg rst_n_i;
-  reg [7:0] cnt;
-
-  always @(posedge clk or negedge rst_n)
-    if (~rst_n) rst_n_i <= 1'b0;
-    else rst_n_i <= 1'b1;
-
-  always @(posedge clk or negedge rst_n_i)
-    if (~rst_n_i) cnt <= 0;
-    else cnt <= cnt + 1;
-
-  assign uo_out  = ~rst_n ? ui_in : ui_in[0] ? cnt : uio_in;
-  assign uio_out = ui_in[0] ? cnt : 8'h00;
-  assign uio_oe  = rst_n && ui_in[0] ? 8'hff : 8'h00;
-
+  
+  dsp_fir m1 (
+    .ui_in(ui_in),
+    .uo_out(uo_out),
+    .uio_in(uio_in),
+    .uio_out(uio_out),
+    .uio_oe(uio_oe),
+    .clk(clk),
+    .rst_n(rst_n)
+  );
   // avoid linter warning about unused pins:
-  wire _unused_pins = ena;
+  wire _unused_pins = &{ena, uio_out, uio_oe, uio_in,1'b0};
 
 endmodule  // tt_um_factory_test
