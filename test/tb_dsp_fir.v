@@ -2,8 +2,8 @@
 
 module tb_dsp_fir();
 
-    reg clk, rst;
-    reg [7:0] ui_in;
+    reg clk, rst, mode;
+    reg [7:0] data_in;
 
     initial clk = 0;
     always #5 clk = ~clk;
@@ -11,29 +11,29 @@ module tb_dsp_fir();
     integer i;
     initial begin
         rst = 0; // Reset the module
-        ui_in = 0;
-
+        data_in = 8'b0;
+        mode = 0;
         @(negedge clk);
         rst = 1; // Let the module start
-        // Reset state, do nothing
+        mode = 1;
+        data_in = 8'h11;
         @(negedge clk);
-        ui_in = 8'h11;
+        data_in = 8'h22;
         @(negedge clk);
-        ui_in = 8'h22;
+        data_in = 8'h33;
         @(negedge clk);
-        ui_in = 8'h33;
+        data_in = 8'h44;
         @(negedge clk);
-        ui_in = 8'h44;
+        data_in = 8'h55;
         @(negedge clk);
-        ui_in = 8'h55;
+        data_in = 8'h66;
         @(negedge clk);
-        ui_in = 8'h66;
+        data_in = 8'h77;
         @(negedge clk);
-        ui_in = 8'h77;
+        data_in = 8'h88;
         @(negedge clk);
-        ui_in = 8'h88;
+        mode = 0;
         @(negedge clk);
-
         #5;
         $write("Time = %0t fir_coeff = ", $time);
         for (i = 0; i < 8; i = i+1) begin
@@ -43,11 +43,10 @@ module tb_dsp_fir();
         $stop;
     end
 
-
     dsp_fir m1 (
         .clk(clk),
         .rst_n(rst),
-        .ui_in(ui_in)
+        .mode(mode),
+        .data_in(data_in)
     );
-
 endmodule
