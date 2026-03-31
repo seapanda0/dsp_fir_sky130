@@ -26,6 +26,12 @@ module dsp_fir(
     reg output_valid;
 
     wire [15:0] result_partial [0:3];
+    
+    // MSB bit flip = -128
+    // Convert uint8 to int8
+    // Example 0-255 -> -128-127
+    wire signed [7:0] data_in_signed;
+    assign data_in_signed = {~data_in[7], data_in[6:0]};
 
     integer  i;
 
@@ -33,7 +39,7 @@ module dsp_fir(
         if (!rst_n) begin
 
             state_q <= M1; // Reset state back to M1
-
+            result_adder_q <= 19'b0;
             for(i=0; i<8; i=i+1) begin
                 fir_coeff[i] <= 8'b0;
                 data_pipeline[i] <= 8'd0;
@@ -56,17 +62,20 @@ module dsp_fir(
 
             end 
             else begin  // Shift data when mode = 0
-                data_pipeline[0] <= data_in;
-                data_pipeline[1] <= data_pipeline[0];
-                data_pipeline[2] <= data_pipeline[1];
-                data_pipeline[3] <= data_pipeline[2];
-                data_pipeline[4] <= data_pipeline[3];
-                data_pipeline[5] <= data_pipeline[4];
-                data_pipeline[6] <= data_pipeline[5];
-                data_pipeline[7] <= data_pipeline[6];
+                if (state_q == M2) begin
+                    data_pipeline[0] <= data_in_signed;
+                    // data_pipeline[0] <= data_in;
+                    data_pipeline[1] <= data_pipeline[0];
+                    data_pipeline[2] <= data_pipeline[1];
+                    data_pipeline[3] <= data_pipeline[2];
+                    data_pipeline[4] <= data_pipeline[3];
+                    data_pipeline[5] <= data_pipeline[4];
+                    data_pipeline[6] <= data_pipeline[5];
+                    data_pipeline[7] <= data_pipeline[6];
 
-                state_q <= state_d;
+                end
                 result_adder_q <= result_adder_d;
+                state_q <= state_d;
             end
         end 
     end
@@ -111,7 +120,14 @@ module dsp_fir(
         endcase
     end
 
-    assign data_out= output_valid ? result_adder_q[15:8] : 8'b0;
+    wire [7:0] data_out_signed;
+
+    // Q8.7 format, discard 7 bits = 8 bit signed num
+    // 8 bit signed + 128 scale back to unsigned
+    // Use bit flip as +128 operation, dont care about overflow
+    assign data_out_signed = {~result_adder_d[14], result_adder_d[13:7]};
+    assign data_out = output_valid ? data_out_signed : 8'b0;
+    // assign data_out = output_valid ? result_adder_d[14:7] : 8'b0;
 
 
     multiplier_x4 m1 (
