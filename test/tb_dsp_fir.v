@@ -21,8 +21,6 @@ module tb_dsp_fir();
     reg [7:0] data_in;
     wire [7:0] data_out;
 
-
-
     initial clk = 0;
     always #5 clk = ~clk;
 
@@ -31,8 +29,8 @@ module tb_dsp_fir();
 
     initial begin
 
-        $readmemh("test/fir_input_vector.txt", tv_input, 0, 255);
-        $readmemh("test/fir_output_vector.txt", tv_output, 0, 255);
+        $readmemh("test/input_vectors.hex", tv_input, 0, 255);
+        $readmemh("test/output_vectors.txt", tv_output, 0, 255);
 
         rst = 0; // Reset the module
         data_in = 8'b0;
@@ -111,22 +109,20 @@ module tb_dsp_fir();
         $display("%0h, %0h, %0h", m1.m1.a3, m1.m1.b3, m1.m1.out3);
         $display("Adder result %0h", m1.result_adder_d);
         
+        @(negedge clk);
+        @(negedge clk); @(negedge clk);
+
         // Next M1 state ready
 
-        // for (i = 0; i<= 20; i = i + 1) begin
-        //     data_in = tv_input[i];
-        //     @(negedge clk); 
-        //     @(negedge clk);
-        //     $display("Rounds: %3d Data out: %0h", i ,data_out);
+        for (i = 0; i<= 20; i = i + 1) begin
+            data_in = tv_input[i];
+            @(negedge clk); 
+            $display("Rounds: %3d Data out: %0h", i ,data_out);
+            @(negedge clk);
 
-        // end
-        
-
-        @(negedge clk); @(negedge clk);
-        // @(negedge clk); @(negedge clk);
+        end
 
         $stop;
-
 
     end
 
