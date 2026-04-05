@@ -10,18 +10,20 @@ module dsp_fir (
     input  wire       clk,      
     input  wire       rst_n     
 );
-    reg [1:0] phase;
+    reg [2:0] phase;
 
-    localparam M0 = 2'd0;
-    localparam M1 = 2'd1;
-    localparam M2 = 2'd2;
-    localparam M3 = 2'd3;
+    localparam M0 = 3'd0;
+    localparam M1 = 3'd1;
+    localparam M2 = 3'd2;
+    localparam M3 = 3'd3;
+    localparam M4 = 3'd4;
+    localparam M5 = 3'd5;
 
     assign clk_adc = (phase == M0 || phase == M1) ? 1'b1 : 1'b0;
     assign clk_dac = ~clk_adc;
 
-    reg signed [7:0]  fir_coeff [0:7];
-    reg signed [7:0]  data_pipe [0:7];
+    reg signed [7:0]  fir_coeff [0:11];
+    reg signed [7:0]  data_pipe [0:11];
     reg signed [7:0] mux_d [0:1], mux_c [0:1];
     reg signed [18:0] acc; 
     reg [7:0] result_reg; 
@@ -32,14 +34,34 @@ module dsp_fir (
     // Combinational logics
     always @(*) begin
         case (phase)
-            M0: begin mux_d[0] = data_in_s;    mux_c[0] = fir_coeff[0]; 
-                         mux_d[1] = data_pipe[0]; mux_c[1] = fir_coeff[1]; end
-            M1: begin mux_d[0] = data_pipe[1]; mux_c[0] = fir_coeff[2]; 
-                         mux_d[1] = data_pipe[2]; mux_c[1] = fir_coeff[3]; end
-            M2: begin mux_d[0] = data_pipe[3]; mux_c[0] = fir_coeff[4]; 
-                         mux_d[1] = data_pipe[4]; mux_c[1] = fir_coeff[5]; end
-            M3: begin mux_d[0] = data_pipe[5]; mux_c[0] = fir_coeff[6]; 
-                         mux_d[1] = data_pipe[6]; mux_c[1] = fir_coeff[7]; end
+            M0: begin
+                mux_d[0] = data_in_s;     mux_c[0] = fir_coeff[0];
+                mux_d[1] = data_pipe[0];  mux_c[1] = fir_coeff[1];
+            end
+            M1: begin
+                mux_d[0] = data_pipe[1];  mux_c[0] = fir_coeff[2];
+                mux_d[1] = data_pipe[2];  mux_c[1] = fir_coeff[3];
+            end
+            M2: begin
+                mux_d[0] = data_pipe[3];  mux_c[0] = fir_coeff[4];
+                mux_d[1] = data_pipe[4];  mux_c[1] = fir_coeff[5];
+            end
+            M3: begin
+                mux_d[0] = data_pipe[5];  mux_c[0] = fir_coeff[6];
+                mux_d[1] = data_pipe[6];  mux_c[1] = fir_coeff[7];
+            end
+            M4: begin
+                mux_d[0] = data_pipe[7];  mux_c[0] = fir_coeff[8];
+                mux_d[1] = data_pipe[8];  mux_c[1] = fir_coeff[9];
+            end
+            M5: begin
+                mux_d[0] = data_pipe[9];  mux_c[0] = fir_coeff[10];
+                mux_d[1] = data_pipe[10]; mux_c[1] = fir_coeff[11];
+            end
+            default : begin
+                mux_d[0] = 8'd0; mux_c[0] = 8'd0;
+                mux_d[1] = 8'd0; mux_c[1] = 8'd0;
+            end 
         endcase
     end
 
@@ -77,7 +99,7 @@ module dsp_fir (
             else 
                 acc <= next_acc;
             
-            if (phase == 2'b11) begin
+            if (phase == M3) begin
                 result_reg <= {~next_acc[14], next_acc[13:7]};
                 for (i=7; i>0; i=i-1) data_pipe[i] <= data_pipe[i-1];
                 data_pipe[0] <= data_in_s;
