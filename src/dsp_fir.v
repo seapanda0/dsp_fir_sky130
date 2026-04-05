@@ -19,7 +19,7 @@ module dsp_fir (
     localparam M4 = 3'd4;
     localparam M5 = 3'd5;
 
-    assign clk_adc = (phase == M1 || phase == M2) ? 1'b1 : 1'b0;
+    assign clk_adc = (phase == M1 || phase == M2 || phase == M3) ? 1'b1 : 1'b0;
     assign clk_dac = ~clk_adc;
 
     reg signed [7:0]  fir_coeff [0:11];
@@ -34,14 +34,34 @@ module dsp_fir (
     // Combinational logics
     always @(*) begin
         case (phase)
-            M0: begin mux_d[0] = data_in_s;    mux_c[0] = fir_coeff[0]; 
-                         mux_d[1] = data_pipe[0]; mux_c[1] = fir_coeff[1]; end
-            M1: begin mux_d[0] = data_pipe[1]; mux_c[0] = fir_coeff[2]; 
-                         mux_d[1] = data_pipe[2]; mux_c[1] = fir_coeff[3]; end
-            M2: begin mux_d[0] = data_pipe[3]; mux_c[0] = fir_coeff[4]; 
-                         mux_d[1] = data_pipe[4]; mux_c[1] = fir_coeff[5]; end
-            M3: begin mux_d[0] = data_pipe[5]; mux_c[0] = fir_coeff[6]; 
-                         mux_d[1] = data_pipe[6]; mux_c[1] = fir_coeff[7]; end
+            M0: begin 
+                mux_d[0] = data_pipe[0]; mux_c[0] = fir_coeff[0]; 
+                mux_d[1] = data_pipe[1]; mux_c[1] = fir_coeff[1];
+            end
+            M1: begin 
+                mux_d[0] = data_pipe[2]; mux_c[0] = fir_coeff[2]; 
+                mux_d[1] = data_pipe[3]; mux_c[1] = fir_coeff[3];
+            end
+            M2: begin
+                mux_d[0] = data_pipe[4]; mux_c[0] = fir_coeff[4]; 
+                mux_d[1] = data_pipe[5]; mux_c[1] = fir_coeff[5];
+            end
+            M3: begin
+                mux_d[0] = data_pipe[6]; mux_c[0] = fir_coeff[6]; 
+                mux_d[1] = data_pipe[7]; mux_c[1] = fir_coeff[7];
+            end
+            M4: begin
+                mux_d[0] = data_pipe[8]; mux_c[0] = fir_coeff[8]; 
+                mux_d[1] = data_pipe[9]; mux_c[1] = fir_coeff[9];
+            end
+            M5: begin
+                mux_d[0] = data_pipe[10]; mux_c[0] = fir_coeff[10]; 
+                mux_d[1] = data_pipe[11]; mux_c[1] = fir_coeff[11];
+            end
+            default: begin
+                mux_d[0] = 8'd0; mux_c[0] = 8'd0; 
+                mux_d[1] = 8'd0; mux_c[1] = 8'd0;
+            end
         endcase
     end
 
@@ -58,28 +78,24 @@ module dsp_fir (
         if (!rst_n) begin
             phase <= M0;
             acc   <= 19'sd0;
-            result_reg <= 8'h80; // Output is MSB flipped, this ensure the output 0
-            for (i=0; i<8; i=i+1) begin
+            result_reg <= 8'h00;
+            for (i=0; i<12; i=i+1) begin
                 fir_coeff[i] <= 8'sd0;
                 data_pipe[i] <= 8'sd0;
             end
         end 
         else if (mode) begin
             // Coefficient loading
-            fir_coeff[0] <= $signed(data_in);
-            for (i=1; i<8; i=i+1) fir_coeff[i] <= fir_coeff[i-1];
+            fir_coeff[0] <= data_in;
+            for (i=1; i<12; i=i+1) fir_coeff[i] <= fir_coeff[i-1];
+            result_reg <= 8'h00;         
             phase <= M0;
-            acc   <= 19'sd0;
+            acc   <= 19'd0;
         end 
         else begin
-            phase <= phase + 1'b1;
-            
-            if (phase == 2'b00) 
-                acc <= math_out;
-            else 
-                acc <= next_acc;
-            
-            if (phase == M3) begin
+            if (phase == M5) begin
+                phase <= M0;
+                acc <= 19'b0;
                 result_reg <= {~next_acc[14], next_acc[13:7]};
                 data_pipe[0] <= data_in_s;
                 data_pipe[1] <= data_pipe[0];
@@ -89,7 +105,16 @@ module dsp_fir (
                 data_pipe[5] <= data_pipe[4];
                 data_pipe[6] <= data_pipe[5];
                 data_pipe[7] <= data_pipe[6];
+                data_pipe[8] <= data_pipe[7];
+                data_pipe[9] <= data_pipe[8];
+                data_pipe[10] <= data_pipe[9];
+                data_pipe[11] <= data_pipe[10];
 
+            end 
+            else begin
+                acc <= next_acc;
+                phase <= phase + 3'b1;
+                result_reg <= result_reg;
             end
         end
     end
