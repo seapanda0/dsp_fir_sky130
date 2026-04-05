@@ -3,13 +3,23 @@
 
 module dsp_fir (
     input  wire [7:0] data_in,    
-    output wire [7:0] data_out,   
+    output wire [7:0] data_out,
+    output wire       clk_adc,
+    output wire       clk_dac,
     input  wire       mode,       
     input  wire       clk,      
     input  wire       rst_n     
 );
-
     reg [1:0] phase;
+
+    localparam M0 = 2'd0;
+    localparam M1 = 2'd1;
+    localparam M2 = 2'd2;
+    localparam M3 = 2'd3;
+
+    assign clk_adc = (phase == M0 || phase == M1) ? 1'b1 : 1'b0;
+    assign clk_dac = ~clk_adc;
+
     reg signed [7:0]  fir_coeff [0:7];
     reg signed [7:0]  data_pipe [0:7];
     reg signed [7:0] mux_d [0:1], mux_c [0:1];
@@ -22,13 +32,13 @@ module dsp_fir (
     // Combinational logics
     always @(*) begin
         case (phase)
-            2'b00: begin mux_d[0] = data_in_s;    mux_c[0] = fir_coeff[0]; 
+            M0: begin mux_d[0] = data_in_s;    mux_c[0] = fir_coeff[0]; 
                          mux_d[1] = data_pipe[0]; mux_c[1] = fir_coeff[1]; end
-            2'b01: begin mux_d[0] = data_pipe[1]; mux_c[0] = fir_coeff[2]; 
+            M1: begin mux_d[0] = data_pipe[1]; mux_c[0] = fir_coeff[2]; 
                          mux_d[1] = data_pipe[2]; mux_c[1] = fir_coeff[3]; end
-            2'b10: begin mux_d[0] = data_pipe[3]; mux_c[0] = fir_coeff[4]; 
+            M2: begin mux_d[0] = data_pipe[3]; mux_c[0] = fir_coeff[4]; 
                          mux_d[1] = data_pipe[4]; mux_c[1] = fir_coeff[5]; end
-            2'b11: begin mux_d[0] = data_pipe[5]; mux_c[0] = fir_coeff[6]; 
+            M3: begin mux_d[0] = data_pipe[5]; mux_c[0] = fir_coeff[6]; 
                          mux_d[1] = data_pipe[6]; mux_c[1] = fir_coeff[7]; end
         endcase
     end
@@ -44,7 +54,7 @@ module dsp_fir (
     // Sequential logics
     always @(posedge clk) begin
         if (!rst_n) begin
-            phase <= 2'd0;
+            phase <= M0;
             acc   <= 19'sd0;
             result_reg <= 8'h80; // Output is MSB flipped, this ensure the output 0
             for (i=0; i<8; i=i+1) begin
@@ -56,7 +66,7 @@ module dsp_fir (
             // Coefficient loading
             fir_coeff[0] <= $signed(data_in);
             for (i=1; i<8; i=i+1) fir_coeff[i] <= fir_coeff[i-1];
-            phase <= 2'd0;
+            phase <= M0;
             acc   <= 19'sd0;
         end 
         else begin

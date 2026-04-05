@@ -104,7 +104,6 @@ module tb_dsp_fir();
         end
 
         // Feed in testvectors
-
         for (i = 0; i<= 40; i = i + 1) begin
             data_in = tv_input[i];
             @(negedge clk); 
