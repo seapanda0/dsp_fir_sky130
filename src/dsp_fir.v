@@ -118,7 +118,5 @@ module dsp_fir (
             end
         end
     end
-
     assign data_out = result_reg;
-
 endmodule
