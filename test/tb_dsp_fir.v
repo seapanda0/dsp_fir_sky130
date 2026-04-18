@@ -18,7 +18,7 @@ module tb_dsp_fir();
     reg [7:0] tv_output [0:INPUT_VECTOR_SIZE-1];
 
     // Data to be hold for 8 rounds of calculation
-    localparam DATA_IN_CONST = 8'h10;
+    localparam DATA_IN_CONST = 8'hFF;
 
     reg clk, rst, mode;
     reg [7:0] data_in;
@@ -29,6 +29,13 @@ module tb_dsp_fir();
 
     integer i;
     integer idx; // Index for which in/out testvectors
+
+    task wait_n_negedges;
+        input integer n;
+        begin
+            repeat (n) @(negedge clk);
+        end
+    endtask
 
     initial begin
 
@@ -67,13 +74,13 @@ module tb_dsp_fir();
         mode = 0;
         data_in = DATA_IN_CONST; // Hold the input constant for 8 rounds
         // Output should be same as input if Q1.7 format and coefficients sum to 1
-        @(negedge clk); @(negedge clk); @(negedge clk); @(negedge clk);
-        @(negedge clk); @(negedge clk); @(negedge clk); @(negedge clk);
-        @(negedge clk); @(negedge clk); @(negedge clk); @(negedge clk);
-        @(negedge clk); @(negedge clk); @(negedge clk); @(negedge clk);
-        @(negedge clk); @(negedge clk); @(negedge clk); @(negedge clk);
-        @(negedge clk); @(negedge clk); @(negedge clk); @(negedge clk);
-        @(negedge clk); @(negedge clk); @(negedge clk); @(negedge clk);
+        wait_n_negedges(8);
+        wait_n_negedges(8);
+        wait_n_negedges(8);
+        wait_n_negedges(8);
+        wait_n_negedges(8);
+        wait_n_negedges(8);
+        wait_n_negedges(8);
         
         $write("Time = %0t fir_coeff = ", $time);
         $write("Data Pipeline: ");
@@ -81,7 +88,7 @@ module tb_dsp_fir();
             $write("%0h ", m1.data_pipe[i]);
         end
         $write("\n");
-        @(negedge clk); @(negedge clk); @(negedge clk); @(negedge clk);
+        wait_n_negedges(8);
 
         // Check math, output should be equal to input if coefficients sum up to 1
 
@@ -93,23 +100,19 @@ module tb_dsp_fir();
         $write("\n");
         $display("Data in: 8'h%0h | Data out: 8'h%0h", DATA_IN_CONST ,data_out);
 
-        @(negedge clk); @(negedge clk); @(negedge clk); @(negedge clk);
+        wait_n_negedges(8);
 
-        for (i = 0; i < 4; i= i + 1) begin
+        for (i = 0; i < 8; i= i + 1) begin
             $display("State %0h Calculations: ", m1.phase);
-            $display("%0h, %0h, %0h", m1.mux_c[0], m1.mux_d[0], m1.p0);
-            $display("%0h, %0h, %0h", m1.mux_c[1], m1.mux_d[1], m1.p1);
-            $display("Adder result %0h", m1.math_out);
+            $display("%0h, %0h, %0h", m1.mux_c, m1.mux_d, m1.p0);
             @(negedge clk);
         end
 
         // Feed in testvectors
         for (i = 0; i<= 40; i = i + 1) begin
             data_in = tv_input[i];
-            @(negedge clk); 
-            @(negedge clk);
-            @(negedge clk);
-            @(negedge clk);
+            wait_n_negedges(8);
+
             $display("Rounds: %3d Data out: %0h", i ,data_out);
         end
 
