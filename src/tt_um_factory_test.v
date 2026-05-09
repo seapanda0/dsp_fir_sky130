@@ -14,14 +14,16 @@ module tt_um_factory_test (
   dsp_fir m1 (
     .data_in(ui_in),
     .data_out(uo_out),
-    .clk_dac(uio_out[1]),
     .clk_adc(uio_out[0]),
-    .mode(uio_in[2]),
+    .clk_dac(uio_out[1]),
+    .spi_cs(uio_in[2]),
+    .spi_mosi(uio_in[3]),
+    .spi_sclk(uio_in[4]),
     .clk(clk),
     .rst_n(rst_n)
   );
   // avoid linter warning about unused pins:
-  wire _unused_pins = &{ena, uio_out[7:2], uio_oe[7:2], uio_in[7:1],1'b0};
+  wire _unused_pins = &{ena, uio_out[7:2], uio_oe[7:2], uio_in[7:5],1'b0};
   
   // Tie unused outputs to 0
   assign uio_out[2] = 1'b0;

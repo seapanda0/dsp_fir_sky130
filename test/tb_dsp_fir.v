@@ -20,7 +20,7 @@ module tb_dsp_fir();
     // Data to be hold for 8 rounds of calculation
     localparam DATA_IN_CONST = 8'hFF;
 
-    reg clk, rst, mode;
+    reg clk, rst;
     reg [7:0] data_in;
     wire [7:0] data_out;
 
@@ -37,6 +37,18 @@ module tb_dsp_fir();
         end
     endtask
 
+    // SPI Coefficients loading
+    reg sclk, mosi, cs;
+    initial sclk = ~0;
+    always #30 sclk = ~sclk; // SPI clock should be 6-7 times slower than source clock
+
+    task wait_n_negedges_sclk;
+        input integer n;
+        begin
+            repeat (n) @(negedge sclk);
+        end
+    endtask
+
     initial begin
 
         $readmemh("test/input_vectors.hex", tv_input, 0, 255);
@@ -44,22 +56,55 @@ module tb_dsp_fir();
 
         rst = 0; // Reset the module
         data_in = 8'b0;
-        mode = 0;
+
+        sclk = 0;
+        mosi = 0;
+        cs = 1;
+        @(negedge clk);
 
         // START OF COEFFICIENT LOADING MODE 
 
-        @(negedge clk);
         rst = 1; // Let the module start
-        mode = 1;
-        data_in = COEFF_7; @(negedge clk);
-        data_in = COEFF_6; @(negedge clk);
-        data_in = COEFF_5; @(negedge clk);
-        data_in = COEFF_4; @(negedge clk);
-        data_in = COEFF_3; @(negedge clk);
-        data_in = COEFF_2; @(negedge clk);
-        data_in = COEFF_1; @(negedge clk);
-        data_in = COEFF_0; @(negedge clk);
-        
+        cs = 0;
+
+        for(i=7; i>=0; i = i - 1) begin
+            mosi = COEFF_0[i];
+            wait_n_negedges_sclk(1);
+        end
+
+        for(i=7; i>=0; i = i - 1) begin
+            mosi = COEFF_1[i];
+            wait_n_negedges_sclk(1);
+        end
+
+        for(i=7; i>=0; i = i - 1) begin
+            mosi = COEFF_2[i];
+            wait_n_negedges_sclk(1);
+        end
+
+        for(i=7; i>=0; i = i - 1) begin
+            mosi = COEFF_3[i];
+            wait_n_negedges_sclk(1);
+        end
+
+        for(i=7; i>=0; i = i - 1) begin
+            mosi = COEFF_4[i];
+            wait_n_negedges_sclk(1);
+        end
+
+        for(i=7; i>=0; i = i - 1) begin
+            mosi = COEFF_5[i];
+            wait_n_negedges_sclk(1);
+        end
+        for(i=7; i>=0; i = i - 1) begin
+            mosi = COEFF_6[i];
+            wait_n_negedges_sclk(1);
+        end
+
+        for(i=7; i>=0; i = i - 1) begin
+            mosi = COEFF_7[i];
+            wait_n_negedges_sclk(1);
+        end
         // END OF COEFFICIENT LOADING MODE 
 
         $write("Time = %0t fir_coeff = \n", $time);
@@ -71,7 +116,7 @@ module tb_dsp_fir();
 
         // START FILTER MODE
 
-        mode = 0;
+        cs = 1;
         data_in = DATA_IN_CONST; // Hold the input constant for 8 rounds
         // Output should be same as input if Q1.7 format and coefficients sum to 1
         wait_n_negedges(8);
@@ -116,15 +161,17 @@ module tb_dsp_fir();
             $display("Rounds: %3d Data out: %0h", i ,data_out);
         end
 
-        $stop;
+        $finish;
 
     end
 
     dsp_fir m1 (
         .clk(clk),
         .rst_n(rst),
-        .mode(mode),
         .data_in(data_in),
-        .data_out(data_out)
+        .data_out(data_out),
+        .spi_cs(cs),
+        .spi_mosi(mosi),
+        .spi_sclk(sclk)
     );
 endmodule

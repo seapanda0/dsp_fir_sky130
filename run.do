@@ -13,6 +13,7 @@ vmap work questa/work
 
 # Compile & run
 vlog src/dsp_fir.v
+vlog src/SPISlave.v
 vlog test/tb_dsp_fir.v
 vsim work.tb_dsp_fir -voptargs=+acc
 add wave -r *

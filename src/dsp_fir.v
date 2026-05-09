@@ -6,9 +6,12 @@ module dsp_fir (
     output wire [7:0] data_out,
     output wire       clk_adc,
     output wire       clk_dac,
-    input  wire       mode,       
-    input  wire       clk,      
-    input  wire       rst_n     
+    input  wire       clk,
+    input  wire       rst_n,
+    input  wire       spi_cs, // Double as mode select for chip operation 
+    //(0 = coefficient loading, 1 = normal operation)
+    input  wire       spi_mosi,
+    input  wire       spi_sclk
 );
     reg [2:0] phase;
 
@@ -24,15 +27,36 @@ module dsp_fir (
     assign clk_adc = (phase == M1 || phase == M2 || phase == M3 || phase == M4) ? 1'b1 : 1'b0;
     assign clk_dac = ~clk_adc;
 
+    // Registers to for coefficients and data pipelines
     reg signed [7:0]  fir_coeff [0:7];
     reg signed [7:0]  data_pipe [0:7];
+    
+    // MUX output lines
     reg signed [7:0] mux_d, mux_c;
+    
+    // Accumulator for the result
     reg signed [18:0] acc; 
     reg [7:0] result_reg; 
     
-    integer i;
+    // MSB Flip to convert 0-255 to -128 - +127
     wire signed [7:0] data_in_s = {~data_in[7], data_in[6:0]};
+
+    wire serialOut;
+    wire serialEn;
+
+    SPISlave m2 (
+        .clk(clk),
+        .rst_n(rst_n),
+        .serialOut(serialOut),
+        .serialEn(serialEn),
+        .rawSCLK(spi_sclk),
+        .rawMOSI(spi_mosi),
+        .rawCS(spi_cs)
+    );
     
+    integer i;
+    integer j;
+
     // Combinational logics
     always @(*) begin
         case (phase)
@@ -80,14 +104,30 @@ module dsp_fir (
                 data_pipe[i] <= 8'sd0;
             end
         end 
-        else if (mode) begin
+        else if (serialEn) begin
             // Coefficient loading
-            fir_coeff[0] <= $signed(data_in);
-            for (i=1; i<8; i=i+1) fir_coeff[i] <= fir_coeff[i-1];
-            phase <= M0;
-            acc   <= 19'sd0;
+            fir_coeff[0][0] <= serialOut; // Replace first bit with new data
+
+            for(j=0; j<7; j=j+1) begin
+                // Connection between coefficients
+                fir_coeff[j+1][0] <= fir_coeff[j][7];
+                for(i=0; i<7; i=i+1) begin
+                    // Connection within coefficients
+                    fir_coeff[j][i+1] <= fir_coeff[j][i]; 
+                end
+            end
+
+            for(i=0; i<7; i=i+1) begin
+                fir_coeff[7][i+1] <= fir_coeff[7][i]; 
+            end
+
+            // fir_coeff[0] <= $signed(data_in);
+            // for (i=1; i<8; i=i+1) fir_coeff[i] <= fir_coeff[i-1];
+            // phase <= M0;
+            // acc   <= 19'sd0;
+
         end 
-        else begin
+        else if (spi_cs) begin // Computation will not begin when spi communication is active
             phase <= phase + 1'b1;
             
             if (phase == M0) begin

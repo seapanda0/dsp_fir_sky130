@@ -17,41 +17,43 @@ project:
   # Source files must be in ./src and you must list each source file separately, one per line.
   # Don't forget to also update `PROJECT_SOURCES` in test/Makefile.
   source_files:
-    - "dsp_fir.v"
     - "tt_um_factory_test.v"
+    - "dsp_fir.v"
+    - "SPISlave.v"
 
 # The pinout of your project. Leave unused pins blank. DO NOT delete or add any pins.
 # This section is for the datasheet/website. Use descriptive names (e.g., RX, TX, MOSI, SCL, SEG_A, etc.).
 pinout:
   # Inputs
-  ui[0]: "sel / in_a[0]"
-  ui[1]: "in_a[1]"
-  ui[2]: "in_a[2]"
-  ui[3]: "in_a[3]"
-  ui[4]: "in_a[4]"
-  ui[5]: "in_a[5]"
-  ui[6]: "in_a[6]"
-  ui[7]: "in_a[7]"
+  ui[0]: "d0_in"
+  ui[1]: "d1_in"
+  ui[2]: "d2_in"
+  ui[3]: "d3_in"
+  ui[4]: "d4_in"
+  ui[5]: "d5_in"
+  ui[6]: "d6_in"
+  ui[7]: "d7_in"
 
   # Outputs
-  uo[0]: "output[0] / counter[0]"
-  uo[1]: "output[1] / counter[1]"
-  uo[2]: "output[2] / counter[2]"
-  uo[3]: "output[3] / counter[3]"
-  uo[4]: "output[4] / counter[4]"
-  uo[5]: "output[5] / counter[5]"
-  uo[6]: "output[6] / counter[6]"
-  uo[7]: "output[7] / counter[7]"
+  uo[0]: "d0_out"
+  uo[1]: "d1_out"
+  uo[2]: "d2_out"
+  uo[3]: "d3_out"
+  uo[4]: "d4_out"
+  uo[5]: "d5_out"
+  uo[6]: "d6_out"
+  uo[7]: "d7_out"
 
   # Bidirectional pins
-  uio[0]: "in_b[0] / counter[0]"
-  uio[1]: "in_b[1] / counter[1]"
-  uio[2]: "in_b[2] / counter[2]"
-  uio[3]: "in_b[3] / counter[3]"
-  uio[4]: "in_b[4] / counter[4]"
-  uio[5]: "in_b[5] / counter[5]"
-  uio[6]: "in_b[6] / counter[6]"
-  uio[7]: "in_b[7] / counter[7]"
+  uio[0]: "adc_clk (output)"
+  uio[1]: "dac_clk (output)"
+  #uio[2]: "mode (input)"
+  uio[2]: "SPI CS"
+  uio[3]: "SPI MOSI"
+  uio[4]: "SPI SCLK"
+  uio[5]: ""
+  uio[6]: ""
+  uio[7]: ""
 
 # Do not change!
 yaml_version: 6
